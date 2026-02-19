@@ -1,0 +1,537 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        288
+      ],
+      "id": "85a5a202-80bf-4eef-8dd1-a17f0df32278",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://sprintsapi.zoho.in/zsapi/team/{{teamid}}/projects/{{ $json.output.project_id }}/sprints/{{ $json.output.sprint_id }}/item/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.output.title }}"
+            },
+            {
+              "name": "projitemtypeid",
+              "value": "={{ $json.output.item_type_id }}"
+            },
+            {
+              "name": "projpriorityid",
+              "value": "={{ $json.output.priority_id }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ $json.output.description }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3840,
+        672
+      ],
+      "id": "da190d74-bff8-4740-b9c7-662d78392963",
+      "name": "Create Item",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PEWzjvGacsfrIu7B",
+          "name": "Sprint"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.action_items",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        2064,
+        288
+      ],
+      "id": "91896601-e0a2-446e-acc1-aec68c18215d",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"action_items\": [\n    {\n      \"title\": \"Finalize dashboard UI\",\n      \"description\": \"Design team to finalize the dashboard UI by end of week\"\n    }\n  ]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1872,
+        512
+      ],
+      "id": "be26d53e-8299-4a9f-b638-a1f07e9b2c65",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"department\": \"string\",\n  \"item_type\": \"string\",\n  \"priority\": \"string\",\n  \"description\":\"string\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2464,
+        512
+      ],
+      "id": "1c8ef13b-1ddb-4e07-99b2-2c1d180f8ce9",
+      "name": "Structured Output Parser4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "10205f2c-600a-4fdc-9a9f-88e9f5c5ce7c",
+              "name": "meeting_id",
+              "value": "mock-meeting-001",
+              "type": "string"
+            },
+            {
+              "id": "c221d386-b0db-4b65-9b41-5cd10fea885b",
+              "name": "meeting_title",
+              "value": "Weekly Operations Sync",
+              "type": "string"
+            },
+            {
+              "id": "45a73ab7-0c6d-435a-a1c9-aca571cd3052",
+              "name": "full_transcript",
+              "value": "The meeting started with a discussion on the overall progress of the dashboard revamp.\nThe design team mentioned that the new UI direction is mostly finalized, but some feedback\nfrom stakeholders is still pending.\n\nJohn pointed out that the dashboard needs to be visually consistent with the mobile app.\nThere was a brief discussion on whether dark mode should be supported in this release,\nbut no final decision was made.\n\nSarah from procurement raised concerns about delays from the current raw material supplier.\nShe suggested that alternative vendors should be evaluated if delivery timelines slip again.\n\nIt was agreed that the design team will finalize the dashboard UI by the end of this week.\nProcurement needs to place an order for raw materials required for production batch 24\nno later than Friday to avoid delays.\n\nThe production team confirmed that machine availability looks good for next week.\nThey will schedule the production run once raw materials are confirmed.\n\nThere was also a general discussion about improving cross-team communication,\nbut no specific tasks were assigned for that topic.\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1504,
+        288
+      ],
+      "id": "8ffb5578-1971-4fa3-b781-439fcae8d259",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1️⃣ classification output (current item)\nconst cls = $json.output;\n\n// 2️⃣ get the CORRECT action item using item index\nconst actionItem = $items(\"Split Out1\")[$itemIndex].json;\n\n// project ID mapping (Zoho Sprints)\nlet projectId;\nlet sprintId;\n\nif (cls.department === \"design\") {\n  projectId = \"36541000000012002\"; \n  sprintId=\"36541000000012009\";// Design project ID\n} else if (cls.department === \"procurement\") {\n  projectId = \"36541000000012059\";  \n  sprintId=\"36541000000012066\";// Procurement project ID\n} else if (cls.department === \"production\") {\n  projectId = \"36541000000012116\";  \n  sprintId=\"36541000000012123\";// Production project ID\n} else {\n  projectId = \"\";  \n// Fallback / Ops project\n}\n\n\nreturn {\n  title: actionItem.title,\n  description: actionItem.description,\n  department: cls.department,\n  item_type: cls.item_type,\n  priority: cls.priority,\n  project_id: projectId,\n  sprint_id: sprintId\n};\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        288
+      ],
+      "id": "f1429c5e-a235-46df-85ad-1d31e0012acf",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an operations assistant.\n\nYour task is to read a meeting transcript and extract ONLY clear action items.\nIgnore discussions, opinions, ideas, and unresolved topics.\n\nTranscript:\n\"{{ $json.full_transcript }}\"\n\n\nRules:\n- Only include tasks that require someone to DO something\n- Rewrite tasks to be clear and actionable\\n- Do not invent tasks\n- If no action items exist, return an empty array\n\nReturn ONLY valid JSON in this format:\n{\n  \"action_items\": \n  [\n    { \n      \"title\": \"Short task title\",\n      \"description\": \"Clear execution-ready description\"\n    }\n  ]\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1712,
+        288
+      ],
+      "id": "6227496a-bf74-4654-8ff4-5f4670ed9994",
+      "name": "AI Agent3"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1696,
+        512
+      ],
+      "id": "29a244db-1c62-4234-999c-c75e5edaaf98",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "fl6sxvn5M1m7Za9O",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a workflow classification engine.\n\nGiven an action item, determine:\n1. department: one of [design, procurement, production]\n2. item_type: one of [task, story, bug]\n3. priority: one of [high, medium, low, none]\n4. return the description as it is {{ $json.description }}\n\nRules:\n- UI / UX / dashboard → design\n- vendors / purchase / raw materials → procurement\n- manufacturing / production run → production\n\nRespond ONLY in JSON.\n\n\nRespond ONLY in JSON.\nINPUT\n========================\nTitle:\n{{ $json.title }}\n\nDescription:\n{{ $json.description }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        2304,
+        288
+      ],
+      "id": "1cd34910-ad28-47ae-a319-ba89536ac792",
+      "name": "AI Agent4"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2288,
+        512
+      ],
+      "id": "8ab04598-3eda-411e-b6f2-15d050226420",
+      "name": "OpenAI Chat Model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "fl6sxvn5M1m7Za9O",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"title\": \"string\",\n  \"description\": \"string\",\n  \"department\": \"string\",\n  \"item_type\": \"string\",\n  \"item_type_id\": \"number\",\n  \"priority\": \"string\",\n  \"priority_id\": \"number\",\n  \"project_id\": \"number\",\n  \"sprint_id\": \"number\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        3536,
+        672
+      ],
+      "id": "d5ff0505-c4c3-4ac4-b534-b79ac8a345a6",
+      "name": "Structured Output Parser5"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an automation assistant inside an n8n workflow.\n\nYou are provided with the following fields (user input):\n- item_type:{{ $json.item_type }}\n- priority:{{ $json.priority }}\n- title:{{ $json.title }}\n- description:{{ $json.description }}\n- department:{{ $json.department }}\n- project_id:{{ $json.project_id }}\n- sprint_id:{{ $json.sprint_id }}\n\nYour task is to resolve system IDs for:\n1. Item Type\n2. Priority\n\n### Rules\n1. Read the value of `item_type` from the input.\n2. Call the tool \"Get Item Type ID\" and extract the ID corresponding to the item_type.\n3. Store the returned value as `item_type_id`.\n\n4. Read the value of `priority` from the input.\n5. Call the tool \"Get Priority ID\" and extract the ID corresponding to the priority.\n6. Store the returned value as `priority_id`.\n\n### Constraints\n- Do NOT guess or hardcode IDs.\n- Always use the tools to fetch IDs.\n\n### Final Output\nRespond only in JSON.\nReturn ONLY valid JSON. Do not include explanations or extra text.\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        3248,
+        496
+      ],
+      "id": "ee8ba841-ed0c-421d-8b98-79c9d3e2af9b",
+      "name": "AI Agent5"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        3104,
+        672
+      ],
+      "id": "bc0593fa-7833-4b7d-969e-cd3894b3170e",
+      "name": "OpenAI Chat Model5",
+      "credentials": {
+        "openAiApi": {
+          "id": "fl6sxvn5M1m7Za9O",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Makes an HTTP request and returns the required item type id.",
+        "url": "=https://sprintsapi.zoho.in/zsapi/team/{{teamid}}/projects/{{ $json.project_id }}/itemtype/?action=data&index=1&range=50",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        3264,
+        672
+      ],
+      "id": "f8793d44-4ade-42d3-b948-d177e4576bab",
+      "name": "Get Item Type ID1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PEWzjvGacsfrIu7B",
+          "name": "Sprint"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Makes an HTTP request and returns the required priority id.",
+        "url": "=https://sprintsapi.zoho.in/zsapi/team/{{teamid}}/projects/{{ $json.project_id }}/priority/?action=data&index=1&range=10",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        3392,
+        672
+      ],
+      "id": "c7123ff7-9c44-4df0-bb2a-d74017800370",
+      "name": "Get Priority ID1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PEWzjvGacsfrIu7B",
+          "name": "Sprint"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2880,
+        288
+      ],
+      "id": "19786164-0194-4da7-ae1d-0c737ddd3819",
+      "name": "Loop Over Items1"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Item": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser4": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent4",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent3": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent4",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser5": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent5": {
+      "main": [
+        [
+          {
+            "node": "Create Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Item Type ID1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Priority ID1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00e2d86f18476fa48a0bbe70e4f34123227f25798f2099883f45d509f13b7aa9"
+  }
+}
