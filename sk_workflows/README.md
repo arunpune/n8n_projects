@@ -25,35 +25,35 @@ Each project is organized in its own folder with:
 
 ## 📂 Project Workflows
 
-### 1️⃣ Booknetic Booking Confirmation & Reminder
-Fetches booking details from Booknetic, sends confirmations, and schedules reminders.
-
-### 2️⃣ Calendar Automation
-Telegram-based calendar scheduler to create meetings and reminders automatically.
-
-### 3️⃣ WhatsApp Tour Booking Automation
-Extracts booking details from WhatsApp messages, logs them into a sheet, and sends scheduled reminders.
-
-### 4️⃣ Zoho Invoice Automation
-Generates invoices in Zoho via Telegram commands.
-
-### 5️⃣ Zoho Quote Automation
-Creates quotations in Zoho through Telegram interaction.
-
-### 6️⃣ Zoho Sprints Task Automation
-Automatically generates and assigns tasks in Zoho Sprints based on meeting transcripts.
-
-### 7️⃣ Accounting Bot
+### 1️⃣ Accounting Automation
 Telegram-based income & expense tracker that logs data into Google Sheets.
 
-### 8️⃣ AI News Blog Automation
-Generates WordPress blog posts with images based on AI news RSS feeds.
+### 2️⃣ Booknetic Booking Confirmation & Reminder
+Fetches booking details from Booknetic, sends confirmations, and schedules reminders.
 
-### 9️⃣ Instagram Comment Automation
+### 3️⃣ Calendar Automation
+Telegram-based calendar scheduler to create meetings and reminders automatically.
+
+### 4️⃣ Events-Based Idea & Blog Generator
+Fetches public holidays and upcoming events to generate blog ideas and content.
+
+### 5️⃣ Instagram Comment Automation
 Replies to Instagram reel comments and sends product information via DM.
 
-### 🔟 Events-Based Idea & Blog Generator
-Fetches public holidays and upcoming events to generate blog ideas and content.
+### 6️⃣ WhatsApp Tour Booking Automation
+Extracts booking details from WhatsApp messages, logs them into a sheet, and sends scheduled reminders.
+
+### 7️⃣ WordPress Blog Automation
+Generates WordPress blog posts with images based on global news RSS feeds.
+
+### 8️⃣ Zoho Invoice Automation
+Generates invoices in Zoho via Telegram commands.
+
+### 9️⃣ Zoho Quote Automation
+Creates quotations in Zoho through Telegram interaction.
+
+### 🔟 Zoho Sprints Task Automation
+Automatically generates and assigns tasks in Zoho Sprints based on meeting transcripts.
 
 ---
 
