@@ -1,0 +1,2150 @@
+{
+  "name": "Event based Ideas & Blogs",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=https://calendarific.com/api/v2/holidays?&api_key=ZmywvhCOPUyfqt5RA7gZTaK8naIxhBjP&country=QA&year={{ DateTime.now().year }}",
+        "options": {}
+      },
+      "id": "0a5e41e1-8529-436e-be44-253e7c20c20d",
+      "name": "Public Holidays (Qatar)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -2048,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.discoverqatar.qa/events/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Referer",
+              "value": "https://discoverqatar.qa/events/"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Scrape Qatar Events",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -2048,
+        -480
+      ],
+      "id": "94d84c27-c345-4839-9368-dbf4e6e22c2a",
+      "notes": "This node fetches the HTML from an events website. The URL should point to a reliable source for Qatar events. This is just an example.\n\n**Note:** Web scraping can be fragile. If the website's structure changes, the 'HTML Extract' node will need to be updated."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Naive version: Remove scripts, styles, and HTML tags\nlet raw = $json[\"data\"];\nraw = raw.replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '');\nraw = raw.replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '');\nraw = raw.replace(/<\\!?[^>]+(>|$)/g, '');\nraw = raw.replace(/\\s{2,}/g, ' ').trim();\nreturn { text: raw };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1744,
+        -240
+      ],
+      "id": "7f53ffce-15d9-4a5c-9b07-68052aa10b3d",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1440,
+        -128
+      ],
+      "id": "0c60e719-7e51-4985-93b6-d695dea0488a",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "kLanx1aWp8Iafr61",
+          "name": "Google Gemini(PaLM) Api (WORK)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional web scraper that extracts the international observance days from the provided raw website content. Based on the text, extract only the upcoming international days. For each international day, include the following fields in the specified JSON format:\n[\n  {\n    \"international_day_name\": \"\",\n    \"date\": \"\"\n  }\n]\n\n*MUST only forward the international days that start on or after {{DateTime.now().toISODate()}}.\n*DO NOT INCLUDE OLD DATES.\n*The international days MUST be before {{ DateTime.now().plus({ months: 0.5 }).toISODate() }}. Any event starting on or after this date must be ignored.\n*Ensure all fields are filled where data is available.\n*If any field is missing, leave it as an empty string.\n*Keep formatting consistent and clean.\n\n##DATA##\n{{ $json.text }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1440,
+        -240
+      ],
+      "id": "7ef0090e-8431-4371-be94-5d42ed0ebbb6",
+      "name": "Basic LLM Chain3"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "[\n  {\n    \"international_day_name\": \"World Day to Combat Desertification and Drought\",\n    \"date\": \"June 17\"\n  },\n  {\n    \"international_day_name\": \"Nelson Mandela International Day\",\n    \"date\": \"July 18\"\n  }\n]\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1296,
+        -128
+      ],
+      "id": "1fffbe29-118d-4c0a-b83e-84ced7f200c7",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "url": " https://www.unesco.org/en/days/list?hub=180536",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2048,
+        -240
+      ],
+      "id": "1921bb1b-6ff8-4d50-9162-560d695a948e",
+      "name": "Int. Observances"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Clean HTML content for all input items\nreturn items.map(item => {\n  let raw = item.json[\"data\"];\n  \n  if (typeof raw !== \"string\") {\n    return { json: { text: \"\" } };\n  }\n\n  raw = raw.replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '');\n  raw = raw.replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '');\n  raw = raw.replace(/<\\!?[^>]+(>|$)/g, '');\n  raw = raw.replace(/\\s{2,}/g, ' ').trim();\n  \n  return { json: { text: raw } };\n});\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1632,
+        -592
+      ],
+      "id": "a2e37e6c-905d-4048-b19a-3c08889c91ba",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1440,
+        -480
+      ],
+      "id": "e241cd06-b4a6-4071-8ffd-25d27b3253e2",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "kLanx1aWp8Iafr61",
+          "name": "Google Gemini(PaLM) Api (WORK)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional web scraper that extracts upcoming event information from the provided raw website content. Based on the text, extract only the upcoming events in Qatar. For each event, include the following fields in the specified JSON format:\n[\n  {\n    \"event_name\": \"\",\n    \"dates\": \"\",\n    \"venue\": \"\",\n    \"info\": \"\"\n  }\n]\n\n*MUST only extract events that start on or after {{DateTime.now().toISODate()}}.\n*DO NOT INCLUDE OLD EVENTS.\n*The event's start date MUST be before {{ DateTime.now().plus({ months: 0.5 }).toISODate() }}. Any event starting on or after this date must be ignored.\n*Ensure all fields are filled where data is available.\n*If any field is missing, leave it as an empty string.\n*Keep formatting consistent and clean.\n\n##DATA##\n{{ $json.text }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1440,
+        -592
+      ],
+      "id": "249f8c85-697b-48a7-8994-5e28dc1bfbfb",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "[\n  {\n    \"event_name\": \"FORMULA 1 QATAR AIRWAYS QATAR GRAND PRIX 2025\",\n    \"dates\": \"28 to 30 November 2025\",\n    \"venue\": \"Lusail International Circuit\",\n    \"info\": \"Experience the thrill of world-class Formula 1 racing in Doha.\"\n  },\n  {\n    \"event_name\": \"FORMULA 1 QATAR AIRWAYS QATAR GRAND PRIX 2025\",\n    \"dates\": \"28 to 30 November 2025\",\n    \"venue\": \"Lusail International Circuit\",\n    \"info\": \"Experience the thrill of world-class Formula 1 racing in Doha.\"\n  }\n]\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1296,
+        -480
+      ],
+      "id": "acc6131c-07d3-49d9-8c6f-7f4f94e8815b",
+      "name": "Structured Output Parser3"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -736,
+        -256
+      ],
+      "id": "23d39f9b-0c2f-4313-8427-803691bbe5a7",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4776433e-8182-4c17-bd2c-be3608f52a12",
+              "leftValue": "={{ $json.date.iso }}",
+              "rightValue": "={{ DateTime.now() }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "afterOrEquals"
+              }
+            },
+            {
+              "id": "2aaa85c1-1b54-41cc-abae-1b90ebe21155",
+              "leftValue": "={{ $json.date.iso }}",
+              "rightValue": "={{ DateTime.now().plus({ months: 1 }) }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "beforeOrEquals"
+              }
+            },
+            {
+              "id": "2bfec299-fde8-4b7c-8478-580825c4512c",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1088,
+        128
+      ],
+      "id": "9f59eeb0-dc97-43e2-9d85-78c36277311b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "response.holidays",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1456,
+        128
+      ],
+      "id": "99f25321-5608-4b61-a1b3-c4d9f7dd92fc",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "url": "=https://calendarific.com/api/v2/holidays?&api_key=ZmywvhCOPUyfqt5RA7gZTaK8naIxhBjP&country=QA&year={{ DateTime.now().year + 1}}",
+        "options": {}
+      },
+      "id": "0a0a263c-a9e6-437c-92b7-e271111260bb",
+      "name": "Public Holidays (Qatar)1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -2048,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.qatarevents.co/?",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2048,
+        -720
+      ],
+      "id": "85249ce9-a3ef-4843-a6eb-cc630ed58df8",
+      "name": "Scrape Events"
+    },
+    {
+      "parameters": {
+        "jsCode": "// This array will hold our clean, standardized list of signals.\nconst allSignals = [];\n\n// Get all the individual items from the Merge node.\nconst items = $input.all();\n\n// Loop through each item (which is now a single event, holiday, or observance).\nfor (const item of items) {\n  const data = item.json;\n\n  // Case 1: Handle the events (from Split Out1 and Split Out2)\n  // We just check if the 'event_name' key exists.\n  if (data.event_name) {\n    allSignals.push(`- Qatar Event: ${data.event_name} (Dates: ${data.dates})`);\n  }\n  \n  // Case 2: Handle the international observances (from Split Out3)\n  // We just check if the 'international_day_name' key exists.\n  else if (data.international_day_name) {\n    allSignals.push(`- International Observance: ${data.international_day_name} (Date: ${data.date})`);\n  }\n  \n  // Case 3: Handle the public holidays (from the 'If' node)\n  // This logic remains the same as before.\n  else if (data.name && data.date?.iso) {\n    allSignals.push(`- Public Holiday: ${data.name} (Date: ${data.date.iso})`);\n  }\n}\n\n// Remove any duplicate lines and join everything into a single text block.\nconst uniqueSignals = [...new Set(allSignals)];\nconst formattedSignals = uniqueSignals.join('\\n');\n\n// Return a single item with the formatted text, ready for the AI.\nreturn [{\n  json: {\n    formattedSignals: formattedSignals\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        -240
+      ],
+      "id": "e77e562d-0468-48ac-ab02-ff7112b2b198",
+      "name": "Consolidate & Format Signals1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1088,
+        -592
+      ],
+      "id": "acdd038c-2aac-41c0-b280-fc4f7ddd1990",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1088,
+        -240
+      ],
+      "id": "34e668a8-0c2a-4f6e-a112-7638694c036b",
+      "name": "Split Out3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        -128
+      ],
+      "id": "c001f545-7aa7-4cff-9637-da830beb2b02",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ppvtrQdddVbmYIPR",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a senior content and marketing strategist for a tourism and lifestyle company based in Qatar that wants *to increse its online presence*. Your task is to analyze the following incoming list of events, holidays, and observances and generate exactly 5 creative, actionable, and timely *marketing* proposals.\n\n##Guidelines:##\n1.  **Be Action-Oriented:** Do not just list the events. Propose concrete actions like a blog post, a social media post, etc.\n2.  **Contextualize for Qatar:** Ensure the ideas are somewhat relevant to an audience in or interested in Qatar.(Not Necessary)\n3.  **Provide Full Details:** For each proposal, you must provide all the requested fields as specified in the JSON structure.\n4.  **Strict JSON Output:** Your entire response MUST be ONLY the raw JSON object. Do not include any explanatory text, introductions, conclusions, or Markdown backticks.\n\n##Upcoming Signals:##\n{{$json.formattedSignals}}\n\n##Required JSON Output Structure:##\n{\n  \"proposals\": [\n    {\n      \"title\": \"Example: Blog Post Idea for World Tourism Day\",\n      \"relevancy\": \"Why this idea is relevant to the Qatar audience and the specific event in 1-2 lines only.\",\n      \"suggested_action\": \"Blog Post OR Social Media Post\",\n      \"details\": \"A brief, single sentence description of the action. e.g., 'Write a blog highlighting sustainable mangrove tours in Qatar.'\",\n      \"timing_recommendation\": \"around when the action be performed, the dates'\"\n      \"base_event\": \"description about the event on which the new proposal is based, this includes the event and its dates.\"\n    }\n  ]\n}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -352,
+        -240
+      ],
+      "id": "3ae8a5e3-f586-4a00-b665-e4d3d83a3b44",
+      "name": "Basic LLM Chain2"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"proposals\": [\n    {\n      \"title\": \"Example: Blog Post Idea for World Tourism Day\",\n      \"relevancy\": \"Why this idea is relevant to the Qatar audience and the specific event in 1-2 lines only.\",\n      \"suggested_action\": \"Blog Post or Social Media Post\",\n      \"details\": \"A brief, single sentence description of the action. e.g., 'Write a blog highlighting sustainable mangrove tours in Qatar.'\",\n      \"timing_recommendation\": \"around when the action be performed, the dates'\",\n      \"base_event\": \"description about the event on which the new proposal is based, this includes the event and its dates.\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -208,
+        -128
+      ],
+      "id": "9482b1f2-0e48-4863-ae05-def579791534",
+      "name": "Structured Output Parser4"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.proposals",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        -240
+      ],
+      "id": "72ef0d85-6371-4d37-a4eb-5c589b1763c3",
+      "name": "Split Out4"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1H20QwDwK50Mrrt0zZ93yGtnvaOrtNCzRFRFr3rkK6EE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ideas Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H20QwDwK50Mrrt0zZ93yGtnvaOrtNCzRFRFr3rkK6EE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Title": "={{ $json.title }}",
+            "Relevancy": "={{ $json.relevancy }}",
+            "Action": "={{ $json.suggested_action }}",
+            "Details": "={{ $json.details }}",
+            "Timings": "={{ $json.timing_recommendation }}",
+            "Run Date": "={{ DateTime.now().toFormat('dd/MM/yyyy') }}",
+            "Base Event": "={{ $json.base_event }}",
+            "Draft Status": "⏳ Pending"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Run Date",
+              "displayName": "Run Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Relevancy",
+              "displayName": "Relevancy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Action",
+              "displayName": "Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Details",
+              "displayName": "Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Timings",
+              "displayName": "Timings",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Base Event",
+              "displayName": "Base Event",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Draft Status",
+              "displayName": "Draft Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        256,
+        -144
+      ],
+      "id": "0d264880-5c6a-4a53-a02c-5fcbfef75040",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bBcWhfhu6f40aTXT",
+          "name": "Google Sheets (WORK)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "-4833922792",
+        "text": "=*💡New Idea Proposal💡*\n\n*📌Title:* {{$json.title}}\n\n*▶️Action:* {{$json.suggested_action}}\n\n*🧠Relevancy:* {{$json.relevancy}}\n\n*📋Details:* {{$json.details}}\n\n*⏳Timing:* {{$json.timing_recommendation}}\n\n*🔗Base Event:* {{ $json.base_event }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        -336
+      ],
+      "id": "da634240-c650-4441-a94b-b6bbb3d8b468",
+      "name": "Send a text message",
+      "webhookId": "10869916-1c83-4302-b8ff-7d22b92d20c4",
+      "credentials": {
+        "telegramApi": {
+          "id": "nzyXPIzUH8nESe6l",
+          "name": "Tele_Acc (Idea_Prop)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                3,
+                6,
+                2
+              ],
+              "triggerAtHour": 9,
+              "triggerAtMinute": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2544,
+        -240
+      ],
+      "id": "dd323a76-28d8-456b-af5c-e734e5c0909d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Action }}",
+                    "rightValue": "Blog Post",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "537c5900-194e-44f8-aad4-3fbfc9e4177c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Blog Post"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "bc2b40a0-e7c0-4ddf-9e16-a918ec4f6164",
+                    "leftValue": "={{ $json.Action }}",
+                    "rightValue": "Social Media Post",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Media Post"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2128,
+        768
+      ],
+      "id": "15bdb401-a154-44fd-8c4a-32753f536858",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional travel and lifestyle blogger and a lead content creator for a premier Qatar tourism brand. Based on the creative proposal provided below, write a complete, SEO-optimized, and engaging blog post draft.\n\nYour goal is to transform the provided brief into a compelling, HUMAN-WRITTEN blog post that engages the readers. You must expand on the core idea, incorporating the key details into a full-length article of at least 400 words.\nAlso, check for the inspiration event as it is the basis for our blog's idea.\n\n##WRITING STYLE##\nTone: Exciting, inviting, informative, and slightly conversational.\nFormat: Web-friendly, with short paragraphs for easy reading.\nGoal: To make the reader feel the event.\nAvoid: Generic filler language. Do not use phrases like “in this blog post,” “we will explore,” etc.\n\n##HTML STRUCTURE##\nYou MUST wrap the entire output in the specified HTML tags.\n\nTitle (SEO-optimized, < 60 characters): <title> ... </title>\n\nContent Body: Enclose the entire post (excluding the title, tags, and image prompt) inside <content> ... </content>\n\nParagraphs: Use <p> tags for all paragraphs.\n\nSubheading: You MUST include one or two meaningful subheading in an <h2> tag to structure the article.\n\nTAGS GENERATION\nAt the very end, generate a list of 5 to 7 SEO-optimized, relevant tags. These should be:\nShort (one to three words only)\nComma-separated\nFocused on topics like Qatar, Doha, travel, and the specific event/theme.\nWrap the tags inside: <tags> ... </tags>\n\nExample: <tags>Visit Qatar, Doha Events, Family Fun, Qatar Travel, Mall of Qatar</tags>\n\n\n##ENGAGEMENT##\n\nEnd the blog post with a soft, engaging question or a reflective statement to encourage comments and shares.\n\nNow, write the blog post based on this creative brief:\n\nBlog Post Title Idea:\n{{$json.Title}}\n\nCore Angle / Relevancy:\n{{$json.Relevancy}}\n\nKey Details to Include:\n{{$json.Details}}\n\nInspiration Event:\n{{ $json['Base Event'] }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1328,
+        624
+      ],
+      "id": "2858bd43-84f8-4f99-9471-82f14e1926c2",
+      "name": "Basic LLM Chain4"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1328,
+        784
+      ],
+      "id": "bc5a55b1-fe3e-46b1-b1ad-abc272bf3973",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "uA3pgfFU7KT4N5to",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const categoryId = [5];\nconst stitle = $('Switch').first().json.Title;\n\nreturn items.map(item => {\n  const htmlText = item.json.text || \"\";\n\n  // Extract the title\n  const titleMatch = htmlText.match(/<title>(.*?)<\\/title>/s);\n  const title = titleMatch ? titleMatch[1].trim() : \"Untitled Article\";\n\n  // Extract content\n  const contentMatch = htmlText.match(/<content>([\\s\\S]*?)<\\/content>/);\n  const content = contentMatch ? contentMatch[1].trim() : \"\";\n\n  // Extract tags\n  //const tagsMatch = htmlText.match(/<tags>(.*?)<\\/tags>/s);\n  //const rawTags = tagsMatch ? tagsMatch[1].trim() : \"\";\n  //const tagList = rawTags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);\n\n  return {\n    json: {\n      title,\n      content,\n      category: categoryId,\n      sheet_title:stitle\n      //tags: tagList,\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        624
+      ],
+      "id": "e0393721-cfed-4e90-b905-35e3cbecf764",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional prompt engineer who specializes in the image generation prompts. So your task is to describe a vibrant, high-quality photograph that captures the essence of the blog post based on the title and content provided.\n\n**DON'T INCLUDE TEXT IN IMAGE**\nPut not to inclue any kind of text in the prompt.\n\nFocus Elements:\n\nEvents: Depict the energy of the event (e.g., crowds, lights, action).\n\nLifestyle: Showcase luxury, culture, or unique local experiences.\n\nScenery: Feature iconic Qatari landmarks (e.g., skyline, desert, mangroves).\n\nStyle Cues:\n\nPhotorealistic, vibrant colors, dynamic composition.\nOften features a shallow depth of field to focus on a key subject.\nDo Not Include: Text, watermarks, or blurry images.\n\n##Blog Title##\n{{ $json.title }}\n\n##Blog Content##\n{{ $json.content }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -832,
+        624
+      ],
+      "id": "a110cfba-240b-40b4-8c9e-ed0ff0d03d5d",
+      "name": "Basic LLM Chain5"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        800
+      ],
+      "id": "14de03d1-edb2-4eb9-9a01-d1f5ddccd54f",
+      "name": "Google Gemini Chat Model5",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ppvtrQdddVbmYIPR",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"image_prompt\": \"Photorealistic, poster-style image capturing the dynamic energy of a Padel match. A player is frozen in a powerful mid-air volley on a court under vibrant evening lights. In the background, the iconic, glittering Doha, Qatar skyline is artistically blurred, creating a sense of place and prestige. Dramatic, cinematic lighting\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -688,
+        800
+      ],
+      "id": "fb85df40-3106-409f-b7f3-f8f27f5325ea",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.together.xyz/v1/images/generations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <api_key>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"model\": \"black-forest-labs/FLUX.1-schnell-Free\",\n    \"prompt\": \"{{ $json.output.image_prompt }} Also don't include any text.\",\n  \"width\": 1024,\n  \"height\": 512,\n    \"steps\": 4,\n    \"n\": 1\n   }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -352,
+        624
+      ],
+      "id": "5c62e54e-5e2e-4b1d-950a-ee37e822734c",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data[0].url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -176,
+        624
+      ],
+      "id": "f3f1c4e1-b1f4-47dd-a36f-368ee03235f7",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  return {\n    json: {\n      fileName: item.binary.data.fileName,\n      mimeType: item.binary.data.mimeType\n    },\n    binary: {\n      data: item.binary.data\n    }\n  };\n});\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        624
+      ],
+      "id": "03b7aee8-0e72-428c-8fc5-4be4afd667f8",
+      "name": "Code5"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1808,
+        496
+      ],
+      "id": "11be4001-1049-47cc-a3b7-20aa67d5ae1a",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://autoblog.amartglobal.in/wp-json/wp/v2/media",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wordpressApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Disposition",
+              "value": "=attachment; filename={{ $json.fileName }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.mimeType }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        176,
+        624
+      ],
+      "id": "df49b6a5-79d3-4e36-979f-949d4957541f",
+      "name": "HTTP Request3",
+      "credentials": {
+        "wordpressApi": {
+          "id": "eyuXk2MUE9ws5xH7",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "title": "={{ $('Code4').item.json.title }}",
+        "additionalFields": {
+          "content": "=<p style=\"text-align: center;\">\n  <img src=\"{{ $json.guid.rendered }}\" \n       alt=\"Auto-uploaded image\" \n       style=\"width:100%; max-width:600px; display: inline-block;\">\n</p>\n\n\n\n{{ $('Code4').item.json.content }}",
+          "status": "draft",
+          "categories": "={{ $('Code4').item.json.category }}"
+        }
+      },
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [
+        368,
+        624
+      ],
+      "id": "2d7185ab-8fb7-4eb8-9248-ea28918df88f",
+      "name": "Wordpress",
+      "credentials": {
+        "wordpressApi": {
+          "id": "eyuXk2MUE9ws5xH7",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1.5,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -528,
+        624
+      ],
+      "id": "90bf5f08-f1d8-4245-ba2a-e90d1a92a8bb",
+      "name": "Wait",
+      "webhookId": "a5a24fd4-e4d5-43bc-942a-3c2bd448b20c"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1H20QwDwK50Mrrt0zZ93yGtnvaOrtNCzRFRFr3rkK6EE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ideas Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H20QwDwK50Mrrt0zZ93yGtnvaOrtNCzRFRFr3rkK6EE/edit#gid=0"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2512,
+        768
+      ],
+      "id": "dec19078-d1a4-442d-a41f-67df24c857b1",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "CS8Td4XFpUyv45Dh",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1808,
+        1024
+      ],
+      "id": "53e2f72e-dd4b-4f5a-a909-ae2a576659a7",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional social media manager for a premier Qatari tourism brand. Your goal is to transform the provided creative brief into a compelling, and ready-to-post social media template.\n\nYou must capture the essence of the proposal in a short, engaging format suitable for platforms like Instagram and Facebook.\n\nSo you are required to output an image prompt which will be basically a post/poster-type that can be posted directly to social media platforms.\n\nThe prompt for post must be related to the below provided Title,timings and the base event for which the post has to be created.\nThe prompt should be in a way that the final image turns out be a kind of poster.\nKeep it one single poster no bifurcation nothing.\n\n**DON'T INCLUDE TEXT IN IMAGE**\nPut not to inclue any kind of text in the prompt.\n\n##Title##\n{{ $json.Title }}\n\n##Timings##\n{{ $json.Timings }}\n\n##Base Event##\n{{ $json['Base Event'] }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1296,
+        1168
+      ],
+      "id": "d55943b7-2c93-400c-9615-bda079760e2d",
+      "name": "Basic LLM Chain7"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1296,
+        1344
+      ],
+      "id": "10df024e-5e15-416b-9110-b4de9ff68acb",
+      "name": "Google Gemini Chat Model7",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "uA3pgfFU7KT4N5to",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"image_prompt\": \"Photorealistic, poster-style image capturing the dynamic energy of a Padel match. A player is frozen in a powerful mid-air volley on a court under vibrant evening lights. In the background, the iconic, glittering Doha, Qatar skyline is artistically blurred, creating a sense of place and prestige. Dramatic, cinematic lighting\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1152,
+        1344
+      ],
+      "id": "41e1a4d5-c2fb-4a76-97f4-b7223e31b71d",
+      "name": "Structured Output Parser6"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.together.xyz/v1/images/generations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <api_key>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"model\": \"black-forest-labs/FLUX.1-schnell-Free\",\n    \"prompt\": \"{{ $json.output.image_prompt }} Also don't include any text.\",\n  \"width\": 1008,\n  \"height\": 1792,\n    \"steps\": 4,\n    \"n\": 1\n   }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -752,
+        1168
+      ],
+      "id": "a66629af-6402-490e-809d-e195679afd81",
+      "name": "HTTP Request5"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data[0].url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -544,
+        1168
+      ],
+      "id": "06d6dcc7-2976-4fb7-8d28-659d0cdbbb73",
+      "name": "HTTP Request6"
+    },
+    {
+      "parameters": {
+        "amount": 1.5,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -960,
+        1168
+      ],
+      "id": "a70db39b-e9e1-4f30-954f-5e619b6220b8",
+      "name": "Wait2",
+      "webhookId": "a5a24fd4-e4d5-43bc-942a-3c2bd448b20c"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1824,
+        -592
+      ],
+      "id": "97f5efe8-d830-4f54-a269-58a15376e9ce",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1824,
+        128
+      ],
+      "id": "2853eff2-45ce-4b92-90ee-34e450f286ac",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Google Sheets Trigger').item.json['Run Date'] }} {{ $('Google Sheets Trigger').item.json.Title }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1ODI1w1pi8Gf-IeoiM81wPYiKDg01UGY_",
+          "mode": "list",
+          "cachedResultName": "n8n-images",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1ODI1w1pi8Gf-IeoiM81wPYiKDg01UGY_"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -336,
+        1168
+      ],
+      "id": "1f5e8b8f-fa91-454e-abc4-8f33266522fa",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Gml4qmibWFKQ5qY1",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1H20QwDwK50Mrrt0zZ93yGtnvaOrtNCzRFRFr3rkK6EE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ideas Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H20QwDwK50Mrrt0zZ93yGtnvaOrtNCzRFRFr3rkK6EE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": 0,
+            "Draft Status": "✅ Ready",
+            "Title": "={{ $('Edit Fields').item.json.Title }}"
+          },
+          "matchingColumns": [
+            "Title"
+          ],
+          "schema": [
+            {
+              "id": "Run Date",
+              "displayName": "Run Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Relevancy",
+              "displayName": "Relevancy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Action",
+              "displayName": "Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Details",
+              "displayName": "Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Timings",
+              "displayName": "Timings",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Base Event",
+              "displayName": "Base Event",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Draft Status",
+              "displayName": "Draft Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -160,
+        1296
+      ],
+      "id": "fd467c51-909c-4571-ad47-29451bcc8a6c",
+      "name": "Update row in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bBcWhfhu6f40aTXT",
+          "name": "Google Sheets (WORK)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3bfe5c8f-bada-4d58-a17c-75ff72a3aac4",
+              "name": "Title",
+              "value": "={{ $json.Title }}",
+              "type": "string"
+            },
+            {
+              "id": "aba1069e-34d6-47c5-a791-f6296e1fa98f",
+              "name": "Relevancy",
+              "value": "={{ $json.Relevancy }}",
+              "type": "string"
+            },
+            {
+              "id": "6dd6de20-a092-40c2-899b-a0b21b66c4a4",
+              "name": "Details",
+              "value": "={{ $json.Details }}",
+              "type": "string"
+            },
+            {
+              "id": "8f66be4b-7bfe-4376-bad4-70bab35ac9a9",
+              "name": "Timings",
+              "value": "={{ $json.Timings }}",
+              "type": "string"
+            },
+            {
+              "id": "e7a955c2-f58b-4a64-a948-a3aabbaa3352",
+              "name": "Base Event",
+              "value": "={{ $json['Base Event'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1504,
+        1168
+      ],
+      "id": "c5859b65-6ac4-4718-82c9-3d6d3308e677",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "84bf2946-ad93-4d02-b783-0af11f1e3d10",
+              "name": "Title",
+              "value": "={{ $json.Title }}",
+              "type": "string"
+            },
+            {
+              "id": "d5afe076-9b1e-462b-b633-576450e0e59f",
+              "name": "Relevancy",
+              "value": "={{ $json.Relevancy }}",
+              "type": "string"
+            },
+            {
+              "id": "95fa4ac3-676a-4377-b132-26a1b5b90bdf",
+              "name": "Details",
+              "value": "={{ $json.Details }}",
+              "type": "string"
+            },
+            {
+              "id": "aec71974-130c-492f-ac3a-0433a2961642",
+              "name": "Timings",
+              "value": "={{ $json.Timings }}",
+              "type": "string"
+            },
+            {
+              "id": "610e3ac5-0e04-4c1e-8765-aec3875bb47e",
+              "name": "Base Event",
+              "value": "={{ $json['Base Event'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1504,
+        624
+      ],
+      "id": "0c64da1a-46e1-4579-827b-39d166bc5279",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1H20QwDwK50Mrrt0zZ93yGtnvaOrtNCzRFRFr3rkK6EE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ideas Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H20QwDwK50Mrrt0zZ93yGtnvaOrtNCzRFRFr3rkK6EE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": 0,
+            "Draft Status": "✅ Ready",
+            "Title": "={{ $('Edit Fields1').item.json.Title }}"
+          },
+          "matchingColumns": [
+            "Title"
+          ],
+          "schema": [
+            {
+              "id": "Run Date",
+              "displayName": "Run Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Relevancy",
+              "displayName": "Relevancy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Action",
+              "displayName": "Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Details",
+              "displayName": "Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Timings",
+              "displayName": "Timings",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Base Event",
+              "displayName": "Base Event",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Draft Status",
+              "displayName": "Draft Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        544,
+        752
+      ],
+      "id": "d9039ccb-325e-4228-a5a0-d2247bab1b49",
+      "name": "Update row in sheet3",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bBcWhfhu6f40aTXT",
+          "name": "Google Sheets (WORK)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "41e7f37a-97bf-46af-a208-ea1786ca9e61",
+              "leftValue": "={{ $json['Draft Status'] }}",
+              "rightValue": "⏳ Pending",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -2320,
+        768
+      ],
+      "id": "daa4457b-9557-47bd-8795-52871fa7bd1f",
+      "name": "Filter"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Public Holidays (Qatar)": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Qatar Events": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Int. Observances": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser3": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain3": {
+      "main": [
+        [
+          {
+            "node": "Split Out3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Public Holidays (Qatar)1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Scrape Events": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Consolidate & Format Signals1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Consolidate & Format Signals1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser4": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain2": {
+      "main": [
+        [
+          {
+            "node": "Split Out4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out4": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Int. Observances",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Scrape Qatar Events",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Scrape Events",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Public Holidays (Qatar)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Public Holidays (Qatar)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain4",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain4": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain5",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain5",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain5": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Wordpress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wordpress": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain7": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model7": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain7",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser6": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain7",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request6": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "81a1b708-d5ec-413a-bf46-a297d16deca9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f14d3f6aadafb81a1b082b9abf757f71dd698f6c95bf99d6400d479fc40bb519"
+  },
+  "id": "4F9vbO8ugXvV1yiL",
+  "tags": []
+}
