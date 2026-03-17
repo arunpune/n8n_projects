@@ -1,0 +1,930 @@
+{
+  "name": "WordPress Blog Posts",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1fVOuHHdaGAlYtbRA-M_kMcxuRd_GZwQD4joEYfCV31k",
+          "mode": "list",
+          "cachedResultName": "Auto Blog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fVOuHHdaGAlYtbRA-M_kMcxuRd_GZwQD4joEYfCV31k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fVOuHHdaGAlYtbRA-M_kMcxuRd_GZwQD4joEYfCV31k/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID POST"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4d07b6a6-a0a4-4dea-a112-e7d96ac69792",
+      "name": "Get context",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        144,
+        528
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8PXnzSneUScOqEc2",
+          "name": "sk_credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3e8d2523-66aa-46fe-adcc-39dc78b9161e",
+              "name": "prompt",
+              "type": "string",
+              "value": "={{ $json.PROMPT }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "75aa21f8-3c75-41bb-ba8d-fcae10cd38df",
+      "name": "Set context",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        368,
+        528
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an SEO Copywriter and you need to find a title of maximum 60 characters for the following article:\n{{ $json.message.content }}\n\nInstructions:\n- Use keywords contained in the article\n- Do not use any HTML characters\n- Output only the string containing the title.\n- Do not use quotes. The only characters allowed are: and ,"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 2048
+        }
+      },
+      "id": "13a56db9-aef2-481f-9793-53131fa2f86b",
+      "name": "Generate title",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        912,
+        528
+      ],
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "fl6sxvn5M1m7Za9O",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=an SEO-friendly article on these topics:\n{{ $json.prompt }}\n\nInstructions:\n- In the introduction, introduce the topic that will be covered in more detail in the rest of the text\n- The introduction should be about 60 words\n- The conclusion should be about 60 words\n- Use the conclusion to summarize everything said in the article and offer a conclusion to the reader\n- Write a maximum of 2-3 chapters.\n- Chapters should follow a logical flow and not repeat the same ideas.\n- Chapters should be related to each other and not isolated blocks of text. The text should flow and follow a linear logic.\n- Do not start chapters with \"Chapter 1\", \"Chapter 2\", \"Chapter 3\" ... write only the chapter title\n- For the text, use HTML for formatting, but limit yourself to bold, italics, paragraphs and lists.\n- Do not put the output between ```html but only the text\n- Do not use markdown for formatting.\n- Go deeper into the topic you are talking about, don't just throw superficial information out there\n- I only want HTML format in output"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 2048
+        }
+      },
+      "id": "0ef29dfe-a74c-41c1-b341-c74652f1ca1b",
+      "name": "Generate article",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        576,
+        528
+      ],
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "fl6sxvn5M1m7Za9O",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "title": "={{ $json.message.content }}",
+        "additionalFields": {
+          "content": "={{ $('Generate article').item.json.message.content }}",
+          "status": "draft"
+        }
+      },
+      "id": "c3a0ef05-c10c-4798-b8e0-3255f43fcb3e",
+      "name": "Add draft to WP",
+      "type": "n8n-nodes-base.wordpress",
+      "position": [
+        1280,
+        528
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "wordpressApi": {
+          "id": "cAMJYTLOGD6i4TSn",
+          "name": "SK Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "prompt": "={{ $json.image_prompt }}",
+        "options": {
+          "size": "1024x1024",
+          "style": "natural"
+        }
+      },
+      "id": "73222d21-719c-45b9-9ed1-fa35d06b999a",
+      "name": "Generate image",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        -80,
+        912
+      ],
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "fl6sxvn5M1m7Za9O",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://autoblog.amartglobal.in/wp-json/wp/v2/media",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wordpressApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Disposition",
+              "value": "=attachment; filename=\"copertina-{{ $('Add draft to WP').item.json.id }}.jpg\""
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "2587ea37-2e5b-4632-9615-b8e988129d65",
+      "name": "Upload image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        160,
+        912
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "wordpressApi": {
+          "id": "cAMJYTLOGD6i4TSn",
+          "name": "SK Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://autoblog.amartglobal.in/wp-json/wp/v2/posts/{{ $('Add draft to WP').item.json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wordpressApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "featured_media",
+              "value": "={{ $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b22a8fb5-e5c2-4049-b222-863124a4fc6e",
+      "name": "Set image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        368,
+        912
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "wordpressApi": {
+          "id": "cAMJYTLOGD6i4TSn",
+          "name": "SK Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1fVOuHHdaGAlYtbRA-M_kMcxuRd_GZwQD4joEYfCV31k",
+          "mode": "list",
+          "cachedResultName": "Auto Blog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fVOuHHdaGAlYtbRA-M_kMcxuRd_GZwQD4joEYfCV31k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fVOuHHdaGAlYtbRA-M_kMcxuRd_GZwQD4joEYfCV31k/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "URL": "={{ $('Add draft to WP').item.json.guid.rendered }}",
+            "DATA": "={{ $now.format('dd/LL/yyyy') }}",
+            "TITLE": "={{ $('Add draft to WP').item.json.title.rendered }}",
+            "ID POST": "={{ $('Add draft to WP').item.json.id }}",
+            "row_number": "={{ $('Get context').item.json.row_number }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "DATA",
+              "displayName": "DATA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PROMPT",
+              "displayName": "PROMPT",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TITLE",
+              "displayName": "TITLE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ID POST",
+              "displayName": "ID POST",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "METATITLE",
+              "displayName": "METATITLE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "METADESCRIPTION",
+              "displayName": "METADESCRIPTION",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "f9bc4ef8-a561-4cf8-a4dc-3caa8dd23ec8",
+      "name": "Update Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        624,
+        912
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8PXnzSneUScOqEc2",
+          "name": "sk_credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create metatitle and metadescription in the language of the following product:\n- Title: {{ $('Add draft to WP').item.json.title.rendered }}\n- Content: {{ $('Add draft to WP').item.json.content.rendered }}\n- Excerpt: {{ $('Add draft to WP').item.json.excerpt.rendered }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an expert SEO content optimizer specialized in creating meta tags for both web pages and blog articles. Your task is to analyze the provided content and generate optimized meta tags based on the content type.\n\nMETA TAG REQUIREMENTS:\n\n1. Meta Title (max 60 characters):\n   - Include primary keyword near the beginning\n   - State the main value proposition\n   - Include brand name when relevant\n   - Use action-oriented language for commercial pages\n   - Format: Primary Keyword | Main Benefit | Brand (if applicable)\n\n2. Meta Description (max 160 characters):\n   - Lead with unique selling proposition\n   - Include primary and secondary keywords naturally\n   - Add clear call-to-action\n   - Highlight key benefits or features\n   - Address user pain points\n   - Tease the main insights or findings\n   - Mention key topics covered\n   - Use engaging question or statement\n   - Include expertise indicators\n   - Promise value or solution\n\nANALYSIS PROCESS:\n1. Content Assessment:\n   - Identify content type and purpose\n   - Extract main topic and keywords\n   - Determine search intent\n   - Identify target audience\n   - Note key differentiators\n\n2. Optimization Strategy:\n   - Align with search intent\n   - Consider competition level\n   - Factor in brand guidelines\n   - Account for content freshness\n   - Optimize for click-through rate\n\nOUTPUT FORMAT:\nReturn ONLY valid JSON in the following format (no markdown): \n{ \n  \"metatitle\": \"string\",\n  \"metadescription\": \"string\" \n}\n\nVALIDATION CHECKLIST:\n- Title length ≤ 60 characters\n- Description length ≤ 160 characters\n- Primary keyword included in both\n- Matches identified search intent\n- Appropriate for content type\n- Clear value proposition\n- Compelling call-to-action\n- Natural keyword placement\n- Proper grammar and spelling\n- Mobile display optimized\n- Don't use placeholder\n\nBEST PRACTICES:\n- Avoid clickbait or misleading content\n- Use power words appropriately\n- Maintain brand voice and tone\n- Ensure mobile snippet optimization\n- Consider local SEO when relevant\n- Keep seasonal content timely\n- Use numbers and data when available\n- Include price/offers if applicable\n- Add emotional triggers when appropriate\n- Consider SERP feature optimization\n\nTECHNICAL GUIDELINES:\n- No double quotes in meta description\n- Avoid unnecessary special characters\n- Use UTF-8 encoding\n- Capitalize properly\n- Avoid keyword cannibalization\n- Respect brand guidelines\n- Consider local market variations\n- Update meta tags for seasonal content\n- Monitor CTR performance\n- A/B test when possible\n\nRemember: The goal is to create meta tags that serve both search engines and users effectively while maintaining specificity for the content type and maximizing organic click-through rates."
+            }
+          ]
+        }
+      },
+      "id": "91c34425-eef8-4e41-a296-60d41e7cec4e",
+      "name": "SEO Expert",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        928,
+        912
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://autoblog.amartglobal.in/wp-json/wp/v2/posts/{{ $('Add draft to WP').item.json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"meta\":{\n    \"_yoast_wpseo_title\":\"{{ $json.metatitle }}\",\n    \"_yoast_wpseo_metadesc\":\"{{ $json.metadescription }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "8bad6a9f-6475-4bd0-a8be-a6b8d2d937fe",
+      "name": "Set metatag",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1536,
+        912
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "J61mkKsECLQMPXwD",
+          "name": "SK wordpress"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1fVOuHHdaGAlYtbRA-M_kMcxuRd_GZwQD4joEYfCV31k",
+          "mode": "list",
+          "cachedResultName": "Auto Blog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fVOuHHdaGAlYtbRA-M_kMcxuRd_GZwQD4joEYfCV31k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fVOuHHdaGAlYtbRA-M_kMcxuRd_GZwQD4joEYfCV31k/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "METATITLE": "={{ $('Extract Meta Tags').item.json.metatitle }}",
+            "row_number": "={{ $('Update Sheet').item.json.row_number }}",
+            "METADESCRIPTION": "={{ $('Extract Meta Tags').item.json.metadescription }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "DATA",
+              "displayName": "DATA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PROMPT",
+              "displayName": "PROMPT",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TITLE",
+              "displayName": "TITLE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID POST",
+              "displayName": "ID POST",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "METATITLE",
+              "displayName": "METATITLE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "METADESCRIPTION",
+              "displayName": "METADESCRIPTION",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "b1045674-f5a0-4732-8db0-234a4df6416e",
+      "name": "Finish work",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1760,
+        912
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8PXnzSneUScOqEc2",
+          "name": "sk_credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Fetches the context of the article you want to generate via AI",
+        "height": 224,
+        "width": 196
+      },
+      "id": "86d5cd48-024a-4a61-87c9-54d821031235",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        96,
+        448
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "Create the draft post on Wordpress with the article text and the title that were previously generated",
+        "height": 240,
+        "width": 280
+      },
+      "id": "5b0b46da-0ae3-4609-ac7b-7d2b1d0dfc3a",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1200,
+        448
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "Upload the generated image to Wordpress media and then associate it with the newly created article",
+        "height": 220,
+        "width": 416
+      },
+      "id": "44dc8024-292f-4d68-a278-1f23670b661b",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        112,
+        848
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "The SEO expert analyzes the created article and generates the appropriate meta title and meta description",
+        "height": 188,
+        "width": 404
+      },
+      "id": "2f710d9f-0085-4efb-9598-8f89b9d88381",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        816,
+        848
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "The generated metadata is associated with the post",
+        "height": 200,
+        "width": 220
+      },
+      "id": "83f84571-e54c-432e-996e-65454b2e1697",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1472,
+        848
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "gpt-5.1"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        928,
+        1072
+      ],
+      "id": "5142522e-9ac7-4970-9f74-7d825ca929a5",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "fl6sxvn5M1m7Za9O",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4.1-mini",
+        "prompt": {
+          "messages": [
+            {
+              "content": "=Using the following blog information, generate image prompts that visually enhance the blog.\n\nINPUT DATA:\nBlog Topic:\n{{ $('Generate title').item.json.message.content }}\n\nBlog Content\n{{ $('Generate article').item.json.message.content }}\n\nIMAGE REQUIREMENTS:\n- Generate an image prompts\n- The image should represent a different visual angle of the topic\n  (example: landscape, activity, people experience)\n- Style: realistic, high-quality photography\n- Lighting: natural, cinematic, warm\n- Perspective: wide-angle or medium shot\n- No text, no logos, no watermarks\n\nALT TEXT RULES:\n- the image must have SEO-friendly alt text\n- Alt text must be descriptive and natural\n- Include alt text in the prompt itself\n\nOUTPUT FORMAT RULES (CRITICAL):\n- Return ONLY valid JSON\n- No explanations\n- No markdown\n- No extra text\n"
+            },
+            {
+              "role": "system",
+              "content": "=You are a professional visual content director specializing in tourism, travel, and blog imagery.\n\nYour task is to generate high-quality image generation prompts that:\n- Visually represent tourism experiences\n- Look attractive, realistic, and blog-ready\n- Are suitable for AI image generation tools\n- Avoid text overlays, logos, watermarks, or brand names\n\nYour visuals should feel:\n- Authentic\n- Inviting\n- Professional\n- Suitable for a tourism blog audience\n\nOUTPUT FORMAT:\nReturn ONLY valid JSON in the following format (no markdown): \n{\n  prompt: \"string\",\n  alt_text: \"string\"\n}\n\n"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "name": "Generate Image Prompt",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        528
+      ],
+      "id": "ab4e55c4-7ebd-41c1-b79d-752b84c775ad",
+      "credentials": {
+        "openAiApi": {
+          "id": "fl6sxvn5M1m7Za9O",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        528
+      ],
+      "id": "86f19a28-5c2b-445b-85ef-d766a18250af",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item, index) => {\n  const raw = item.json.message.content;\n\n  let parsed;\n  try {\n    parsed = JSON.parse(raw);\n  } catch (err) {\n    throw new Error(\n      `Invalid JSON in item ${index + 1}: ${err.message}\\n\\nRaw:\\n${raw}`\n    );\n  }\n\n  return {\n    json: {\n      index: index + 1,\n      image_prompt: parsed.image_prompt || parsed.prompt || \"\",\n      alt_text: parsed.alt_text || \"\"\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        576
+      ],
+      "id": "67cd6214-429b-44b5-b252-9338d47f07ef",
+      "name": "Extract Image Prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item, index) => {\n  const raw = item.json.text;\n\n  let parsed;\n  try {\n    parsed = JSON.parse(raw);\n  } catch (err) {\n    throw new Error(\n      `Invalid JSON in item ${index + 1}: ${err.message}\\n\\nRaw:\\n${raw}`\n    );\n  }\n\n  return {\n    json: {\n      metatitle: parsed.metatitle || \"\",\n      metadescription: parsed.metadescription || \"\"\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        912
+      ],
+      "id": "c45a1c79-2a02-4647-8d0e-d02755573686",
+      "name": "Extract Meta Tags"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Set image": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEO Expert": {
+      "main": [
+        [
+          {
+            "node": "Extract Meta Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get context": {
+      "main": [
+        [
+          {
+            "node": "Set context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set context": {
+      "main": [
+        [
+          {
+            "node": "Generate article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set metatag": {
+      "main": [
+        [
+          {
+            "node": "Finish work",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Sheet": {
+      "main": [
+        [
+          {
+            "node": "SEO Expert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload image": {
+      "main": [
+        [
+          {
+            "node": "Set image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate image": {
+      "main": [
+        [
+          {
+            "node": "Upload image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate title": {
+      "main": [
+        [
+          {
+            "node": "Add draft to WP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add draft to WP": {
+      "main": [
+        [
+          {
+            "node": "Generate Image Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate article": {
+      "main": [
+        [
+          {
+            "node": "Generate title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SEO Expert",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image Prompt": {
+      "main": [
+        [
+          {
+            "node": "Extract Image Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Image Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Meta Tags": {
+      "main": [
+        [
+          {
+            "node": "Set metatag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d4cf332c-6a87-47e2-9343-ae26ffe1f117",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00e2d86f18476fa48a0bbe70e4f34123227f25798f2099883f45d509f13b7aa9"
+  },
+  "id": "xWXSthq0ZhvyeGGE",
+  "tags": []
+}
