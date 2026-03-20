@@ -7,6 +7,7 @@ An AI-powered blog automation workflow built in n8n that generates SEO-optimized
 ## 📌 Overview
 
 This project builds a fully automated blog generation and publishing system.
+
 Reference: https://n8n.io/workflows/3085-automate-seo-optimized-wordpress-posts-with-ai-and-google-sheets/
 
 The workflow:
