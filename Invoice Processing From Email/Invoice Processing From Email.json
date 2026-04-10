@@ -1,0 +1,168 @@
+{
+  "name": "Automating Invoice Processing From Email",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {}
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a285ee0b-c066-4b8b-bcbd-826c6301de99",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "BZzIfZQgfA0Ipayn",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Identify the invoice id and the price of the invoice from the following email:\n{{ $json.snippet }}\nOutput only the invoice ID and the price as a number.\n\nExtract invoice_id and price from the email.\n\nReturn ONLY valid JSON in this format:\n{\n  \"invoice_id\": \"string\",\n  \"price\": number\n}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "32d9c082-97c3-4a0c-81a3-313ad0d28aff",
+      "name": "Message a model",
+      "retryOnFail": false,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "WrngXjlVeKLb2kOi",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1oA57DQOAlR8t2EN4yOLPxHuxpPB166gHvZNs0gWsQMc",
+          "mode": "list",
+          "cachedResultName": "Invoice Processing from Email",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1oA57DQOAlR8t2EN4yOLPxHuxpPB166gHvZNs0gWsQMc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1oA57DQOAlR8t2EN4yOLPxHuxpPB166gHvZNs0gWsQMc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Invoice": "={{ JSON.parse($json.content.parts[0].text).invoice_id }}",
+            "Total": "={{ JSON.parse($json.content.parts[0].text).price }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Invoice",
+              "displayName": "Invoice",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Total",
+              "displayName": "Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        560,
+        0
+      ],
+      "id": "068a93bd-92e2-4262-9eaa-191450c8436a",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kPV7RhR366m7arTA",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "5108e418-73d4-439a-b165-db230f921ed0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fd7e1c2f4650f16f5bf841c28aa823da52c4bafaa836317d6a857b6a7329502a"
+  },
+  "id": "ZVlNKH7SXQ88fV7w",
+  "tags": []
+}
